@@ -50,7 +50,7 @@ export function ApiKeysView() {
   const keys = useQuery({ queryKey: ['api-keys'], queryFn: () => api.get<Page<ApiKeyView>>('/api-keys').then((r) => r.items) });
   const [creating, setCreating] = useState(false);
   const [created, setCreated] = useState<string | null>(null);
-  const canCreate = me.data?.workspace.role !== 'viewer';
+  const canCreate = me.data?.workspace.role !== 'viewer' && !me.data?.guest;
   const items = keys.data ?? [];
   const active = items.filter((k) => k.status === 'active');
   const past = items.filter((k) => k.status !== 'active');

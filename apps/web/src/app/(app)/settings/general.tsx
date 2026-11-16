@@ -23,9 +23,10 @@ export function GeneralSettings() {
   if (!me.data) return <Notice tone="error">Could not load your settings. {errorMessage(me.error)}</Notice>;
   return (
     <div className="space-y-6">
+      {me.data.guest && <Notice>You are visiting with sign-in off. Make and edit anything in the studio; the owner&apos;s account, keys, team and publishing settings are read-only here.</Notice>}
       <ProfileSection me={me.data} />
       <WorkspaceSection me={me.data} />
-      <DeleteAccountSection />
+      {!me.data.guest && <DeleteAccountSection />}
     </div>
   );
 }
@@ -56,14 +57,14 @@ function ProfileSection({ me }: { me: Me }) {
       title="Profile"
       description="How you appear in activity and on shared review links."
       footer={
-        <Button size="sm" disabled={!dirty} loading={save.isPending} onClick={() => save.mutate()}>
+        <Button size="sm" disabled={!dirty || me.guest} loading={save.isPending} onClick={() => save.mutate()}>
           Save profile
         </Button>
       }
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Name" htmlFor="profile-name">
-          <Input id="profile-name" value={value} maxLength={120} onChange={(e) => setName(e.target.value)} placeholder="Your name" autoComplete="name" />
+          <Input id="profile-name" value={value} maxLength={120} onChange={(e) => setName(e.target.value)} placeholder="Your name" autoComplete="name" disabled={me.guest} />
         </Field>
         <Field label="Email" hint="The address you sign in with.">
           <Input value={me.user.email ?? ''} readOnly disabled />

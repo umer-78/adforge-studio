@@ -242,9 +242,10 @@ export function route<B = undefined, Q = Record<string, string | string[]>>(opts
       const read = req.method === 'GET' || req.method === 'HEAD';
       if (caller.via === 'session' && !read) assertSameOrigin(req);
       const minRole = opts.role ?? (read ? 'viewer' : 'editor');
-      if (caller.guest && closedToGuests(opts, caller.role, minRole)) throw guestDenied();
+      if (caller.guest && closedToGuests(opts, caller.role, minRole, read)) throw guestDenied();
       requireRole(caller, minRole);
-      requireScope(caller, opts.scope ?? (read ? 'read' : 'write'));
+      // Browser sessions carry every scope; scopes limit API keys.
+      if (caller.via === 'api_key') requireScope(caller, opts.scope ?? (read ? 'read' : 'write'));
       if (caller.via === 'api_key') await rateLimit(sb, `key:${caller.apiKeyId}`, 240, 60);
       if (opts.limit) await rateLimit(sb, `${opts.limit[0]}:${caller.workspaceId}`, opts.limit[1], opts.limit[2]);
       const query = (opts.query ? opts.query.parse(searchParamsObject(req.nextUrl.searchParams)) : searchParamsObject(req.nextUrl.searchParams)) as Q;

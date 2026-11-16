@@ -18,10 +18,13 @@ export interface EstimateResponse {
 /** Live price for the current settings, refreshed as they change. */
 export function useEstimate(modelId: string | undefined, params: GenParamsInput, variants: number) {
   const key = useDebounced(JSON.stringify({ modelId, params, variants }), 300);
+  // The request sends the debounced settings, so wait until they too name a model: for the first
+  // 300 ms after the model list loads they still do not, and the API would answer 400.
+  const ready = !!modelId && !!(JSON.parse(key) as { modelId?: string }).modelId;
   return useQuery({
     queryKey: ['estimate', key],
     queryFn: () => api.post<EstimateResponse>('/generate/estimate', JSON.parse(key) as Record<string, unknown>),
-    enabled: !!modelId,
+    enabled: ready,
     placeholderData: keepPreviousData,
     staleTime: 30_000,
     retry: false,

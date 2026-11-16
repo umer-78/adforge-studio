@@ -11,8 +11,9 @@ export function guestRole(role: Role): Role {
 
 /**
  * Whether a route is closed to the guest: routes marked noGuests (account, keys, team, public
- * pages), anything that publishes or touches ad accounts, and anything above the guest's role.
+ * pages), anything that publishes or changes ad accounts and campaigns (reading them is fine), and
+ * anything above the guest's role.
  */
-export function closedToGuests(opts: { noGuests?: boolean; scope?: GuestScope }, role: Role, minRole: Role): boolean {
-  return !!opts.noGuests || opts.scope === 'publish' || opts.scope === 'ads' || ROLES.indexOf(role) > ROLES.indexOf(minRole);
+export function closedToGuests(opts: { noGuests?: boolean; scope?: GuestScope }, role: Role, minRole: Role, read = false): boolean {
+  return !!opts.noGuests || ((opts.scope === 'publish' || opts.scope === 'ads') && !read) || ROLES.indexOf(role) > ROLES.indexOf(minRole);
 }
