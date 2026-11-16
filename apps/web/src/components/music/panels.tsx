@@ -3,6 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Clapperboard, Ellipsis, FolderPlus, Mic, Music, Pause, Play, Plus, Scissors, Search, Trash2, Zap } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { formatDuration, MUSIC_GENRES, MUSIC_MOODS, SFX_CATEGORIES } from '@adforge/core';
@@ -345,6 +346,7 @@ function SfxLibrary() {
 
 function SfxTile({ sfx: s, playing, onPlay }: { sfx: SfxView; playing: boolean; onPlay: () => void }) {
   const qc = useQueryClient();
+  const router = useRouter();
   const editor = useOpenInEditor();
   const [removing, setRemoving] = useState(false);
   const state = LICENSE_STATE[s.licenseState];
@@ -365,7 +367,7 @@ function SfxTile({ sfx: s, playing, onPlay }: { sfx: SfxView; playing: boolean; 
     const a = await assetFor().catch(() => null);
     if (!a) return;
     void qc.invalidateQueries({ queryKey: ['assets'] });
-    toast.success(`“${s.name}” is in your Library`, { action: { label: 'Open', onClick: () => window.location.assign(`/library/${a.id}`) } });
+    toast.success(`“${s.name}” is in your Library`, { action: { label: 'Open', onClick: () => router.push(`/library/${a.id}`) } });
   };
   const edit = async () => {
     const a = await assetFor().catch(() => null);

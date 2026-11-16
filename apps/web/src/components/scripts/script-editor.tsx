@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { formatUsd, LANGUAGES, languageName, type AspectRatio, type ScriptLine } from '@adforge/core';
 import { AssetPicker } from '@/components/app/asset-picker';
 import { PlatformIcon } from '@/components/app/platform-icon';
-import { useVoices, VoicePicker } from '@/components/app/voice-picker';
+import { VoicePicker } from '@/components/app/voice-picker';
 import type { EstimateResponse } from '@/components/generate/cost-estimate';
 import { ModelPicker } from '@/components/generate/model-picker';
 import { useModels, useStudioModel } from '@/components/generate/use-studio-model';
@@ -78,7 +78,6 @@ export function ScriptEditor({ id }: { id: string }) {
   const qc = useQueryClient();
   const script = useScript(id);
   const characters = useCharacters();
-  const voices = useVoices();
   const frameModel = useStudioModel('t2i');
   const ttsModels = useModels('tts');
   const [ttsModelId, setTtsModelId] = useLocalSetting<string>('af:script:tts-model', 'eleven-v3-tts');

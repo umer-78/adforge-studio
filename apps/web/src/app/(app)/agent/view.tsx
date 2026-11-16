@@ -120,7 +120,6 @@ function NewRunForm({ className }: { className?: string }) {
   const fallbackModel = list.find((m) => m.recommended && m.available)?.id ?? list.find((m) => m.available)?.id ?? list.find((m) => m.recommended)?.id;
   const modelId = videoModelId ?? fallbackModel;
   const model = list.find((m) => m.id === modelId);
-  const product = products.data?.find((p) => p.id === productId);
   useOnChange([initialProduct, products.data], () => {
     if (initialProduct && products.data && !products.data.some((p) => p.id === initialProduct)) setProductId('none');
   });

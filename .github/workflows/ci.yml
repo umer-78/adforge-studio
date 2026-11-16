@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: pnpm (the version in package.json)
+        run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Lint (no warnings allowed)
+        run: pnpm --filter @adforge/web exec eslint --max-warnings=0
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Tests (core, web, worker)
+        run: pnpm test

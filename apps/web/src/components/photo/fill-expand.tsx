@@ -95,7 +95,8 @@ export function FillExpandTool() {
         m.beginPath();
         st.points.forEach(([x, y], i) => (i ? m.lineTo(x * s, y * s) : m.moveTo(x * s, y * s)));
         if (st.points.length === 1) m.arc(st.points[0]![0] * s, st.points[0]![1] * s, st.r * s, 0, Math.PI * 2);
-        st.points.length === 1 ? m.fill() : m.stroke();
+        if (st.points.length === 1) m.fill();
+        else m.stroke();
       }
       ctx.globalAlpha = preview ? 0.6 : 1;
       ctx.drawImage(mask, 0, 0);

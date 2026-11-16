@@ -2,7 +2,6 @@
 
 import { BadgeCheck, ChartColumn, CircleAlert, FlaskConical, Hourglass, Star, Trophy } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
 import { AssetThumb } from '@/components/app/asset-card';
 import { PlatformIcon, PLATFORM_META } from '@/components/app/platform-icon';
 import { CompareBars, TimeSeries } from '@/components/charts/time-series';

@@ -94,7 +94,7 @@ export function GenerateStudio({ modes, kind, presets = [] }: { modes: StudioMod
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const inputs = model?.inputs ?? {};
+  const inputs = useMemo(() => model?.inputs ?? {}, [model]);
   const refVideo = inputs.video === 'optional' && (inputs.references ?? 0) > 0;
   const params = useMemo<GenParamsInput>(() => {
     const p: GenParamsInput = { prompt: NO_PROMPT.has(capability) ? '' : prompt };
@@ -155,7 +155,7 @@ export function GenerateStudio({ modes, kind, presets = [] }: { modes: StudioMod
     getNextPageParam: (last) => last.nextCursor ?? undefined,
     refetchInterval: (q) => (q.state.data?.pages.some((p) => p.items.some((g) => g.status === 'queued' || g.status === 'running')) ? 5000 : false),
   });
-  const gens = feed.data?.pages.flatMap((p) => p.items) ?? [];
+  const gens = useMemo(() => feed.data?.pages.flatMap((p) => p.items) ?? [], [feed.data]);
   const groups = useMemo(() => {
     const m = new Map<string, GenerationView[]>();
     for (const g of gens) if (g.variantGroup) m.set(g.variantGroup, [...(m.get(g.variantGroup) ?? []), g]);

@@ -35,6 +35,8 @@ async function request<T>(method: string, path: string, body?: Body, init?: Requ
   if (!res.ok) {
     const err = (data && typeof data === 'object' && 'error' in data ? (data as { error: { message?: string; code?: string; details?: unknown } }).error : null) ?? null;
     if (res.status === 401 && typeof window !== 'undefined' && !url.startsWith('/api/auth')) {
+      // A full page load on purpose: it drops every cached query of the session that just ended.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.href = `/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
     }
     throw new ApiError(err?.message ?? (typeof data === 'string' && data ? data.slice(0, 200) : res.statusText || 'Request failed'), res.status, err?.code, err?.details);

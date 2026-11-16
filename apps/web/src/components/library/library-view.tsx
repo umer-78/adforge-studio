@@ -49,7 +49,10 @@ export function LibraryView({ trash = false }: { trash?: boolean }) {
 
   const setParams = (next: Record<string, string | undefined>) => {
     const p = new URLSearchParams(sp.toString());
-    for (const [k, v] of Object.entries(next)) (v ? p.set(k, v) : p.delete(k));
+    for (const [k, v] of Object.entries(next)) {
+      if (v) p.set(k, v);
+      else p.delete(k);
+    }
     router.replace(`${pathname}${p.toString() ? `?${p}` : ''}`, { scroll: false });
   };
   useEffect(() => {

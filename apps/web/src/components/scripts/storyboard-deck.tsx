@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { api, errorMessage } from '@/lib/api-client';
 import { useLocalSetting } from '@/lib/hooks/use-local-setting';
 import { useMe } from '@/lib/hooks/use-me';
-import type { AssetView, BrandKitView, ScriptDetailView } from '@/lib/types';
+import type { AssetView, BrandKitView } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { BEAT_STYLE, formatSeconds, platformAspect, useScript, type Beat } from './use-scripts';
 
