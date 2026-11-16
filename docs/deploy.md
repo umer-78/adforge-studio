@@ -40,10 +40,13 @@ directly and build ZIP downloads from it, so its CORS rules must allow the websi
    - `NEXT_PUBLIC_APP_URL` only for a custom domain: without it the site uses its Vercel address
    - `APP_ENCRYPTION_KEY` (see [the encryption key](#the-encryption-key))
    - `APP_OWNER_EMAILS` if only you should be able to sign in
-   - `OPEN_ACCESS=1` to turn sign-in off for now: every visitor opens the studio as the first
-     `APP_OWNER_EMAILS` account. Anyone with the link can then use it, so keep the link private,
-     and delete the variable (then redeploy) to require sign-in again. While it is on, paid AI
-     stops at $2 a day per workspace; set `AI_DAILY_CAP_USD` (on Vercel and Railway) to change it.
+   - `OPEN_ACCESS=1` to turn sign-in off: visitors open the studio without signing in, as a
+     shared **guest** account that is an editor in the first `APP_OWNER_EMAILS` account's
+     workspace. Guests can make and edit things there, but cannot see your email, change your
+     account, provider keys, team or link-in-bio page, publish, or touch ad accounts, and the
+     guest stops working as soon as the variable is gone. You sign in as yourself at
+     `/login?owner=1` (or from the account menu). Paid AI stops at $2 a day per workspace while it
+     is on; set `AI_DAILY_CAP_USD` (on Vercel and Railway) to change it.
    - `PEXELS_API_KEY` and `PIXABAY_API_KEY` (both free) to add stock photos and videos to the
      Free media page. Free music, sounds and photos from Openverse work without a key.
 4. Deploy. Then put the site's address in the Supabase URL settings (step 1.3) and in the

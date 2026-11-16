@@ -8,7 +8,7 @@ export const GET = route({}, async ({ sb, caller }) => {
   return { items: await toBioViews(sb, data ?? []) };
 });
 
-export const POST = route({ body: bioPageSaveSchema, limit: ['bio.write', 60, 3600] }, async ({ sb, caller, body }) => {
+export const POST = route({ body: bioPageSaveSchema, noGuests: true, limit: ['bio.write', 60, 3600] }, async ({ sb, caller, body }) => {
   const { count } = await sb.from('bio_pages').select('id', { count: 'exact', head: true }).eq('workspace_id', caller.workspaceId);
   if ((count ?? 0) >= MAX_BIO_PAGES) throw badRequest(`A workspace can have up to ${MAX_BIO_PAGES} link pages.`);
   await checkBioAvatar(sb, caller.workspaceId, body.avatarAssetId);

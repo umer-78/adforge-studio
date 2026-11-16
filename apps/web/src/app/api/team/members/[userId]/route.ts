@@ -25,7 +25,7 @@ export const PATCH = route({ body: z.object({ role: z.enum(INVITABLE_ROLES) }), 
 });
 
 /** Removes a member, or lets someone leave. The owner stays. */
-export const DELETE = route({ role: 'viewer' }, async ({ sb, caller, params }) => {
+export const DELETE = route({ role: 'viewer', noGuests: true }, async ({ sb, caller, params }) => {
   requireSession(caller, 'Team members');
   const userId = params.userId!;
   const current = await member(sb, caller.workspaceId, userId);

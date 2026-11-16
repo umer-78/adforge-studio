@@ -8,7 +8,7 @@ export const GET = route({}, async ({ sb, caller, params }) => {
   return { page: view[0], stats };
 });
 
-export const PUT = route({ body: bioPageSaveSchema, limit: ['bio.write', 60, 3600] }, async ({ sb, caller, params, body }) => {
+export const PUT = route({ body: bioPageSaveSchema, noGuests: true, limit: ['bio.write', 60, 3600] }, async ({ sb, caller, params, body }) => {
   const page = await owned(sb, 'bio_pages', params.id!, caller, 'The link page');
   await checkBioAvatar(sb, caller.workspaceId, body.avatarAssetId);
   const { data: saved, error } = await sb
@@ -24,7 +24,7 @@ export const PUT = route({ body: bioPageSaveSchema, limit: ['bio.write', 60, 360
   return (await toBioViews(sb, [saved]))[0];
 });
 
-export const DELETE = route({}, async ({ sb, caller, params }) => {
+export const DELETE = route({ noGuests: true }, async ({ sb, caller, params }) => {
   const page = await owned(sb, 'bio_pages', params.id!, caller, 'The link page');
   const { error } = await sb.from('bio_pages').delete().eq('id', page.id);
   if (error) throw new Error(`Could not delete the page: ${error.message}`);

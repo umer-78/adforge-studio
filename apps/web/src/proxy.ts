@@ -1,20 +1,17 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { isOpenAccessGuest, openAccessEnabled, ownerEmailList } from '@/lib/open-access';
 import { APP_PREFIXES } from '@/lib/site';
 
 const isAppPath = (p: string) => APP_PREFIXES.some((prefix) => p === prefix || p.startsWith(`${prefix}/`));
 
 function allowed(email: string | undefined): boolean {
-  const list = (process.env.APP_OWNER_EMAILS ?? '')
-    .split(',')
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
+  const list = ownerEmailList();
   return !list.length || (!!email && list.includes(email.toLowerCase()));
 }
 
-/** OPEN_ACCESS (with an owner email) turns sign-in off: /auth/open signs visitors in as the owner. */
-const openAccess = () =>
-  ['1', 'true', 'yes', 'on'].includes((process.env.OPEN_ACCESS ?? '').trim().toLowerCase()) && (process.env.APP_OWNER_EMAILS ?? '').split(',').some((s) => s.trim());
+/** OPEN_ACCESS (with an owner email) turns sign-in off: /auth/open signs visitors in as the shared guest. */
+const openAccess = openAccessEnabled;
 
 /** Refreshes the Supabase session cookie and keeps signed-out visitors out of the app. */
 export async function proxy(request: NextRequest) {
@@ -48,8 +45,13 @@ export async function proxy(request: NextRequest) {
     return res;
   };
 
-  // People not on APP_OWNER_EMAILS get in when they joined someone's workspace by invite.
-  const permitted = async () => !!claims && (allowed(claims.email as string | undefined) || (await supabase.rpc('has_joined_workspace')).data === true);
+  // People not on APP_OWNER_EMAILS get in when they joined someone's workspace by invite. The shared
+  // guest gets in only while sign-in is off.
+  const guest = isOpenAccessGuest(claims?.email);
+  const permitted = async () =>
+    !!claims && !(guest && !openAccess()) && (allowed(claims.email as string | undefined) || (await supabase.rpc('has_joined_workspace')).data === true);
+  // "/login?owner=1" shows the sign-in form even while sign-in is off, so the owner can sign in as themselves.
+  const ownerSignIn = request.nextUrl.searchParams.has('owner');
 
   if (isAppPath(path)) {
     const next = path + request.nextUrl.search;
@@ -59,10 +61,10 @@ export async function proxy(request: NextRequest) {
     if (!ok) return redirect('/login', { error: 'not_allowed' });
   }
   // With sign-in off the sign-in page goes straight into the studio, unless it is showing an error.
-  if (path === '/login' && !claims && openAccess() && !request.nextUrl.searchParams.has('error')) {
+  if (path === '/login' && !claims && openAccess() && !ownerSignIn && !request.nextUrl.searchParams.has('error')) {
     return redirect('/auth/open', { next: request.nextUrl.searchParams.get('next') ?? '/dashboard' });
   }
-  if (path === '/login' && claims && !request.nextUrl.searchParams.has('error') && (await permitted())) {
+  if (path === '/login' && claims && !(guest && ownerSignIn) && !request.nextUrl.searchParams.has('error') && (await permitted())) {
     const next = request.nextUrl.searchParams.get('next');
     return redirect(next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard');
   }

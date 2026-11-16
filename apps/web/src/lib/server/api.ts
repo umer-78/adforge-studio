@@ -4,6 +4,8 @@ import { ownerEmails, ProviderNotConfiguredError, serviceClient, sha256Hex, type
 import { unstable_rethrow } from 'next/navigation';
 import { connection, NextResponse, type NextRequest } from 'next/server';
 import * as z from 'zod';
+import { closedToGuests, guestRole } from '@/lib/guest-policy';
+import { isOpenAccessGuest, openAccessEnabled } from '@/lib/open-access';
 import { sessionClient } from './supabase';
 
 export const SCOPES = ['read', 'write', 'generate', 'publish', 'ads'] as const;
@@ -17,6 +19,8 @@ export interface Caller {
   via: 'session' | 'api_key';
   scopes: readonly Scope[];
   apiKeyId: string | null;
+  /** The shared visitor account while sign-in is off (OPEN_ACCESS): an editor that cannot touch the owner's account, keys, team, publishing or ads. */
+  guest: boolean;
 }
 
 export interface HandlerArgs<B, Q> {
@@ -37,6 +41,8 @@ export interface RouteOptions<B, Q> {
   query?: z.ZodType<Q>;
   /** [bucket, requests, window seconds], counted per workspace. */
   limit?: [string, number, number];
+  /** Closed to the shared visitor account (account, keys, team and public pages). Publishing, ads and admin-only routes are closed to it anyway. */
+  noGuests?: boolean;
 }
 
 type RouteContext = { params: Promise<Record<string, string | string[]>> };
@@ -47,6 +53,8 @@ export const notFound = (what = 'This item') => new AppError('not_found', `${wha
 export const badRequest = (message: string, details?: unknown) => new AppError('invalid_request', message, 400, details);
 export const forbidden = (message = 'You do not have access to this.') => new AppError('forbidden', message, 403);
 export const conflict = (message: string, details?: unknown) => new AppError('conflict', message, 409, details);
+export const guestDenied = () =>
+  new AppError('guest_not_allowed', 'Visitors can make and edit things in this studio, but not change this. The owner can, after signing in at /login?owner=1.', 403);
 
 function errorResponse(err: unknown): NextResponse {
   if (err instanceof z.ZodError) {
@@ -122,12 +130,13 @@ async function apiKeyCaller(sb: ServiceClient, token: string, requested: string 
   const { data: member } = await sb.from('workspace_members').select('role').eq('workspace_id', key.workspace_id).eq('user_id', key.user_id).maybeSingle();
   if (!member) throw new AppError('unauthorized', 'The owner of this API key left the workspace.', 401);
   const email = await userEmail(sb, key.user_id);
+  if (isOpenAccessGuest(email)) throw new AppError('unauthorized', 'Visitor accounts cannot use API keys.', 401);
   if (joinedOnly(email) && !(await joinedWorkspace(sb, key.user_id, key.workspace_id))) throw NOT_ALLOWED();
   if (!key.last_used_at || Date.now() - new Date(key.last_used_at).getTime() > 5 * 60_000) {
     void sb.from('api_keys').update({ last_used_at: new Date().toISOString() }).eq('id', key.id).then(() => undefined);
   }
   const scopes = (key.scopes ?? []).filter((s): s is Scope => (SCOPES as readonly string[]).includes(s));
-  return { userId: key.user_id, email, workspaceId: key.workspace_id, role: member.role as Role, via: 'api_key', scopes, apiKeyId: key.id };
+  return { userId: key.user_id, email, workspaceId: key.workspace_id, role: member.role as Role, via: 'api_key', scopes, apiKeyId: key.id, guest: false };
 }
 
 /** Who is calling: a signed-in browser session or an API key (`Authorization: Bearer afk_…`). */
@@ -144,9 +153,13 @@ export async function resolveCaller(req: NextRequest, sb = serviceClient()): Pro
   const claims = data?.claims;
   if (!claims?.sub) throw new AppError('unauthorized', 'Sign in to continue.', 401);
   const email = (claims.email as string | undefined) ?? null;
+  const guest = isOpenAccessGuest(email);
+  // The shared visitor account works only while sign-in is off.
+  if (guest && !openAccessEnabled()) throw NOT_ALLOWED();
   const { workspaceId, role } = await membership(sb, claims.sub, requested, joinedOnly(email));
-  return { userId: claims.sub, email, workspaceId, role, via: 'session', scopes: SCOPES, apiKeyId: null };
+  return { userId: claims.sub, email, workspaceId, role: guest ? guestRole(role) : role, via: 'session', scopes: SCOPES, apiKeyId: null, guest };
 }
+
 
 export function hasRole(caller: Caller, min: Role): boolean {
   // ROLES is ordered from most to least privileged.
@@ -158,6 +171,7 @@ export function requireRole(caller: Caller, min: Role) {
 }
 
 export function requireScope(caller: Caller, scope: Scope) {
+  if (caller.guest && (scope === 'publish' || scope === 'ads')) throw guestDenied();
   if (!caller.scopes.includes(scope)) throw forbidden(`This API key is missing the "${scope}" scope.`);
 }
 
@@ -227,7 +241,9 @@ export function route<B = undefined, Q = Record<string, string | string[]>>(opts
       const caller = await resolveCaller(req, sb);
       const read = req.method === 'GET' || req.method === 'HEAD';
       if (caller.via === 'session' && !read) assertSameOrigin(req);
-      requireRole(caller, opts.role ?? (read ? 'viewer' : 'editor'));
+      const minRole = opts.role ?? (read ? 'viewer' : 'editor');
+      if (caller.guest && closedToGuests(opts, caller.role, minRole)) throw guestDenied();
+      requireRole(caller, minRole);
       requireScope(caller, opts.scope ?? (read ? 'read' : 'write'));
       if (caller.via === 'api_key') await rateLimit(sb, `key:${caller.apiKeyId}`, 240, 60);
       if (opts.limit) await rateLimit(sb, `${opts.limit[0]}:${caller.workspaceId}`, opts.limit[1], opts.limit[2]);

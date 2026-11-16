@@ -11,7 +11,7 @@ const profileSchema = z.object({
   avatarUrl: z.string().url().max(1000).nullable().optional(),
 });
 
-export const PATCH = route({ body: profileSchema, role: 'viewer' }, async ({ sb, caller, body }) => {
+export const PATCH = route({ body: profileSchema, role: 'viewer', noGuests: true }, async ({ sb, caller, body }) => {
   const patch: { full_name?: string | null; avatar_url?: string | null } = {};
   if (body.fullName !== undefined) patch.full_name = body.fullName;
   if (body.avatarUrl !== undefined) patch.avatar_url = body.avatarUrl;
@@ -23,7 +23,7 @@ export const PATCH = route({ body: profileSchema, role: 'viewer' }, async ({ sb,
  * Permanently deletes the signed-in account and every workspace it owns. Only from the app, never
  * with an API key, and only with the typed confirmation.
  */
-export const DELETE = route({ body: z.object({ confirm: z.literal('DELETE') }), role: 'viewer', limit: ['account-delete', 5, 3600] }, async ({ sb, caller }) => {
+export const DELETE = route({ body: z.object({ confirm: z.literal('DELETE') }), role: 'viewer', noGuests: true, limit: ['account-delete', 5, 3600] }, async ({ sb, caller }) => {
   requireSession(caller, 'Your account');
   return deleteAccount(sb, caller.userId);
 });

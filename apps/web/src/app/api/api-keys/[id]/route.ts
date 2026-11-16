@@ -2,7 +2,7 @@ import { check, forbidden, hasRole, logActivity, owned, route } from '@/lib/serv
 import { API_KEY_COLUMNS, requireSession, toApiKeyView } from '@/lib/server/providers';
 
 /** Revokes the key. It stops working on the next request. */
-export const DELETE = route({ role: 'editor' }, async ({ sb, caller, params }) => {
+export const DELETE = route({ role: 'editor', noGuests: true }, async ({ sb, caller, params }) => {
   requireSession(caller, 'API keys');
   const row = await owned(sb, 'api_keys', params.id!, caller, 'This API key');
   if (row.user_id !== caller.userId && !hasRole(caller, 'admin')) throw forbidden('Only the person who made this key or an admin can revoke it.');

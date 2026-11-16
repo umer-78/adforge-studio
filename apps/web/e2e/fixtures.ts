@@ -32,9 +32,10 @@ export const me: Me = {
     ads: { meta: true, tiktok: true },
     adLibrary: true,
   },
-  providers: { anthropic: true, openai: true, fal: true, replicate: true, agnes: false, elevenlabs: true, ayrshare: false },
+  providers: { anthropic: true, gemini: false, openai: true, fal: true, replicate: true, agnes: false, elevenlabs: true, ayrshare: false },
   budget: { spentUsd: 23.84, budgetUsd: 100, remainingUsd: 76.16, hardStop: true },
   openAccess: false,
+  guest: false,
 };
 
 interface MediaSeed {

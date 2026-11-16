@@ -5,5 +5,6 @@ import { openInvites, teamMembers } from '@/lib/server/team';
 export const GET = route({}, async ({ sb, caller }) => {
   const admin = hasRole(caller, 'admin');
   const [members, invites] = await Promise.all([teamMembers(sb, caller.workspaceId, caller.userId), admin ? openInvites(sb, caller.workspaceId) : Promise.resolve([])]);
-  return { members, invites, canManage: admin };
+  // Visitors (sign-in off) see who is on the team, not their email addresses.
+  return { members: caller.guest ? members.map((m) => ({ ...m, email: null })) : members, invites, canManage: admin };
 });

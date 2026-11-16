@@ -13,7 +13,7 @@ export const GET = route({ query: z.object({ kind: z.enum(CONSENT_KINDS).optiona
 });
 
 /** Records who agreed to what, when and from where. */
-export const POST = route({ body: consentCreateSchema, limit: ['consents', 30, 3600] }, async ({ sb, caller, body, req }) => {
+export const POST = route({ body: consentCreateSchema, noGuests: true, limit: ['consents', 30, 3600] }, async ({ sb, caller, body, req }) => {
   if (body.evidenceAssetId) await owned(sb, 'assets', body.evidenceAssetId, caller, 'Evidence file');
   const row = check(
     await sb

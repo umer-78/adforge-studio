@@ -32,7 +32,7 @@ describe('geminiBody', () => {
   it('has a legacy form for API versions without responseFormat', async () => {
     const body = await geminiBody({ schema, system: 's', prompt: 'p' }, 'legacy');
     expect(body.generationConfig).toMatchObject({ responseMimeType: 'application/json', maxOutputTokens: 16_000 });
-    expect((body.generationConfig as { responseJsonSchema: { type: string } }).responseJsonSchema.type).toBe('object');
+    expect(body.generationConfig.responseJsonSchema?.type).toBe('object');
   });
 });
 

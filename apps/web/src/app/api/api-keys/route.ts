@@ -15,7 +15,7 @@ export const GET = route({}, async ({ sb, caller }) => {
 });
 
 /** The full key is returned once, here. Only its hash is stored. */
-export const POST = route({ body: apiKeyCreateSchema, role: 'editor', limit: ['api-keys', 20, 3600] }, async ({ sb, caller, body }) => {
+export const POST = route({ body: apiKeyCreateSchema, role: 'editor', noGuests: true, limit: ['api-keys', 20, 3600] }, async ({ sb, caller, body }) => {
   requireSession(caller, 'API keys');
   const { count } = await sb.from('api_keys').select('id', { count: 'exact', head: true }).eq('workspace_id', caller.workspaceId).is('revoked_at', null);
   if ((count ?? 0) >= MAX_ACTIVE) throw badRequest(`This workspace already has ${MAX_ACTIVE} active keys. Revoke one first.`);

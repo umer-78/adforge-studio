@@ -1,6 +1,6 @@
 'use client';
 
-import { BookOpen, KeyRound, LogOut, Monitor, Moon, Settings, Sun } from 'lucide-react';
+import { BookOpen, KeyRound, LogIn, LogOut, Monitor, Moon, Settings, Sun } from 'lucide-react';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import { Avatar } from '@/components/ui/avatar';
@@ -19,7 +19,7 @@ export function UserMenu() {
       <DropdownMenuContent className="w-60">
         <DropdownMenuLabel className="font-normal">
           <div className="truncate text-sm font-medium text-foreground">{data?.user.name ?? 'Signed in'}</div>
-          <div className="truncate text-xs">{data?.user.email}</div>
+          <div className="truncate text-xs">{data?.guest ? 'Visiting: account settings are the owner’s' : data?.user.email}</div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
@@ -50,6 +50,16 @@ export function UserMenu() {
             <Monitor className="mr-1" /> System
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
+        {data?.guest && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/login?owner=1">
+                <LogIn /> Owner sign-in
+              </Link>
+            </DropdownMenuItem>
+          </>
+        )}
         {!data?.openAccess && (
           <>
             <DropdownMenuSeparator />

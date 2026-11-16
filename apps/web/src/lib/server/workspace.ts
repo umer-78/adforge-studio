@@ -1,6 +1,7 @@
 import 'server-only';
 import { KEY_PROVIDERS, budgetStatus, features, hasServerKey, openAccessEmail, type KeyProvider, type ServiceClient } from '@adforge/core/server';
 import { JOB_LABELS, isRecord, type JobRow, type JobType } from '@adforge/core';
+import { GUEST_NAME } from '@/lib/open-access';
 import type { JobView, Me } from '@/lib/types';
 import type { Caller } from './api';
 
@@ -27,7 +28,9 @@ export async function loadMe(sb: ServiceClient, caller: Caller): Promise<Me> {
   if (!ws) throw new Error('Workspace not found');
   const f = features();
   return {
-    user: { id: caller.userId, email: caller.email, name: profile?.full_name ?? null, avatarUrl: profile?.avatar_url ?? null },
+    user: caller.guest
+      ? { id: caller.userId, email: null, name: GUEST_NAME, avatarUrl: null }
+      : { id: caller.userId, email: caller.email, name: profile?.full_name ?? null, avatarUrl: profile?.avatar_url ?? null },
     workspace: {
       id: ws.id,
       name: ws.name,
@@ -57,6 +60,7 @@ export async function loadMe(sb: ServiceClient, caller: Caller): Promise<Me> {
     providers,
     budget,
     openAccess: !!openAccessEmail(),
+    guest: caller.guest,
   };
 }
 
