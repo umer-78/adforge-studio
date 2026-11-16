@@ -16,7 +16,7 @@ import { bundle } from '@remotion/bundler';
 import { renderMedia, renderStill, selectComposition } from '@remotion/renderer';
 import { BUILTIN_SFX, DEFAULT_BRAND, MOTION_TEMPLATES, motionDefaults, TIMELINE_TEMPLATES, type ResolvedAsset } from '@adforge/core';
 import { MOTION_COMPOSITION_ID, TIMELINE_COMPOSITION_ID } from '../lib/remotion';
-import { SAMPLE_BOTTLE_SVG } from './sample-bottle';
+import { SAMPLE_BOTTLE_SIZE, sampleBottleDataUrl } from './sample-bottle';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.resolve(here, '../../../web/public');
@@ -69,7 +69,7 @@ async function generateThumbnails(url: string) {
   }
 }
 
-const sampleBottle = `data:image/svg+xml;base64,${Buffer.from(SAMPLE_BOTTLE_SVG).toString('base64')}`;
+const sampleBottle = sampleBottleDataUrl();
 
 /** Short muted loops for the landing page, rendered from the built-in motion templates. */
 const LOOPS: { name: string; templateId: string; props?: Record<string, unknown>; assets?: Record<string, ResolvedAsset>; scrub?: boolean }[] = [
@@ -78,7 +78,7 @@ const LOOPS: { name: string; templateId: string; props?: Record<string, unknown>
     name: 'showcase',
     templateId: 'product-showcase',
     props: { imageAssetId: 'sample-bottle' },
-    assets: { 'sample-bottle': { id: 'sample-bottle', type: 'image', src: sampleBottle, width: 400, height: 400 } },
+    assets: { 'sample-bottle': { id: 'sample-bottle', type: 'image', src: sampleBottle, width: SAMPLE_BOTTLE_SIZE, height: SAMPLE_BOTTLE_SIZE } },
     scrub: true,
   },
   { name: 'compare', templateId: 'comparison' },

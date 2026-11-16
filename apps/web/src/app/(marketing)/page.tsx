@@ -87,7 +87,7 @@ const FEATURES: { icon: LottieIconName; title: string; body: string; visual: Rea
     icon: 'photo',
     title: 'Photo',
     body: 'Product shots, edits, upscaling and background removal with Nano Banana, Seedream, Recraft and GPT Image.',
-    visual: <CutoutVisual src="/landing/sample-bottle.svg" />,
+    visual: <CutoutVisual src="/landing/sample-bottle.webp" />,
   },
   {
     icon: 'motion3d',
