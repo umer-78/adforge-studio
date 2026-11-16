@@ -1,7 +1,7 @@
 import { readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { asJson, parseWorkspaceSettings, type AssetMeta, type AssetRow, type Json, type PlaybackInfo, type Update } from '@adforge/core';
-import { env, features, muxCreateAsset, providerKey } from '@adforge/core/server';
+import { env, features, llmAccess, muxCreateAsset, providerKey } from '@adforge/core/server';
 import { PermanentError } from '../lib/errors';
 import { downloadAsset, loadAsset, putDerived, signedAssetUrl } from '../lib/files';
 import { trackBeats } from '../media/beats';
@@ -224,7 +224,7 @@ async function queueAutoAnalysis(ctx: JobContext, asset: AssetRow, p: ProbeResul
   const settings = parseWorkspaceSettings(ws?.settings);
   if (!settings.autoAnalyze) return;
   const [claude, openai, eleven] = await Promise.all([
-    providerKey(asset.workspace_id, 'anthropic'),
+    llmAccess(asset.workspace_id),
     providerKey(asset.workspace_id, 'openai'),
     providerKey(asset.workspace_id, 'elevenlabs'),
   ]);

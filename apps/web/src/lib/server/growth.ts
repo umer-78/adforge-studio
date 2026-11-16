@@ -35,7 +35,7 @@ export function llmTaskUsd(task: LlmTask): number {
 /** Claude must be configured and the monthly budget must cover the estimate. Returns the estimate. */
 export async function assertLlmReady(sb: ServiceClient, caller: Caller, usd: number, what: string): Promise<number> {
   const providers = await providerStatus(sb, caller.workspaceId);
-  if (!providers.anthropic) throw new AppError('provider_not_configured', `Add a Claude API key in Settings → Providers to ${what}.`, 400, { provider: 'anthropic' });
+  if (!providers.anthropic && !providers.gemini) throw new AppError('provider_not_configured', `Add a Claude key, or a free Gemini key, in Settings → Providers to ${what}.`, 400, { provider: 'anthropic' });
   await assertBudget(sb, caller.workspaceId, usd);
   return usd;
 }

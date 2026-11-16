@@ -21,6 +21,7 @@ const rec = (v: unknown): Record<string, unknown> => (v && typeof v === 'object'
 /** Free, read-only calls that need a valid key. None of them start paid work. */
 const PROBES: Record<KeyProvider, (key: string) => Probe> = {
   anthropic: (key) => ({ url: 'https://api.anthropic.com/v1/models?limit=1', headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' } }),
+  gemini: (key) => ({ url: 'https://generativelanguage.googleapis.com/v1beta/models?pageSize=1', headers: { 'x-goog-api-key': key } }),
   openai: (key) => ({ url: 'https://api.openai.com/v1/models', headers: { authorization: `Bearer ${key}` } }),
   fal: (key) => ({ url: 'https://api.fal.ai/v1/models/pricing?endpoint_id=fal-ai%2Fflux%2Fdev', headers: { authorization: `Key ${key}` } }),
   replicate: (key) => ({

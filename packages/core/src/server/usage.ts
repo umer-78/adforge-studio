@@ -1,5 +1,6 @@
 import type { Database } from '../db/database.types';
 import { AppError, formatUsd } from '../utils';
+import { dailyAiCapUsd } from './env';
 import type { AnyClient } from './supabase';
 
 type UsageKind = Database['public']['Tables']['usage_ledger']['Insert']['kind'];
@@ -60,8 +61,31 @@ export async function budgetStatus(sb: AnyClient, workspaceId: string): Promise<
   return { spentUsd: spent, budgetUsd: budget, remainingUsd: Math.max(0, budget - spent), hardStop: ws.budget_hard_stop };
 }
 
-/** Throws when a paid action would exceed the monthly cap and the workspace uses a hard stop. */
+/** What a workspace has spent since midnight UTC. */
+export async function daySpend(sb: AnyClient, workspaceId: string, now = new Date()): Promise<number> {
+  const since = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const { data, error } = await sb.from('usage_ledger').select('cost_usd').eq('workspace_id', workspaceId).gte('created_at', since.toISOString()).limit(20_000);
+  if (error) throw new Error(`Could not read spend: ${error.message}`);
+  return (data ?? []).reduce((sum, r) => sum + Number(r.cost_usd ?? 0), 0);
+}
+
+/** The daily cap check on its own: throws once today's spend plus this action would pass the cap. */
+export function checkDailyCap(spentTodayUsd: number, additionalUsd: number, capUsd: number | null) {
+  if (capUsd == null || additionalUsd <= 0) return;
+  if (spentTodayUsd + additionalUsd > capUsd + 1e-9) {
+    throw new AppError(
+      'daily_cap_reached',
+      `This would cost about ${formatUsd(additionalUsd)} and pass today's AI spending cap (${formatUsd(spentTodayUsd)} of ${formatUsd(capUsd)} used). The cap resets at midnight UTC; the owner can change AI_DAILY_CAP_USD.`,
+      402,
+      { spentTodayUsd, capUsd },
+    );
+  }
+}
+
+/** Throws when a paid action would pass the daily AI cap, or exceed the monthly cap when the workspace uses a hard stop. */
 export async function assertBudget(sb: AnyClient, workspaceId: string, additionalUsd: number): Promise<BudgetStatus> {
+  const cap = dailyAiCapUsd();
+  if (cap != null && additionalUsd > 0) checkDailyCap(await daySpend(sb, workspaceId), additionalUsd, cap);
   const status = await budgetStatus(sb, workspaceId);
   if (status.hardStop && status.spentUsd + additionalUsd > status.budgetUsd + 1e-9) {
     throw new AppError(

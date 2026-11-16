@@ -132,7 +132,7 @@ function NewRunForm({ className }: { className?: string }) {
   const f = me.data?.features;
   const missing = f
     ? [
-        !f.llm && 'Claude (research and scripts)',
+        !f.llm && 'Claude or Gemini (research and scripts)',
         model && !model.available && `${model.vendor} for ${model.label} shots`,
         !f.elevenlabs && 'ElevenLabs (voice-over)',
       ].filter((x): x is string => !!x)

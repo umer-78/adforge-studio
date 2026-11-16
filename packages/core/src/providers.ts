@@ -1,5 +1,5 @@
 /** Services the app calls with a workspace's own API key (or the server's). */
-export const KEY_PROVIDERS = ['anthropic', 'openai', 'fal', 'replicate', 'agnes', 'elevenlabs', 'ayrshare'] as const;
+export const KEY_PROVIDERS = ['anthropic', 'gemini', 'openai', 'fal', 'replicate', 'agnes', 'elevenlabs', 'ayrshare'] as const;
 export type KeyProvider = (typeof KEY_PROVIDERS)[number];
 
 export interface ProviderInfo {
@@ -17,6 +17,12 @@ export const PROVIDER_INFO: Record<KeyProvider, ProviderInfo> = {
     uses: 'Scripts, prompt enhancer, product research, ad scoring and the agent.',
     keyUrl: 'https://console.anthropic.com/settings/keys',
     placeholder: 'sk-ant-…',
+  },
+  gemini: {
+    label: 'Google Gemini',
+    uses: 'Free alternative to Claude for scripts, the prompt enhancer, product research and ad scoring. Used only when no Claude key is set.',
+    keyUrl: 'https://aistudio.google.com/apikey',
+    placeholder: 'AIza…',
   },
   openai: {
     label: 'OpenAI',

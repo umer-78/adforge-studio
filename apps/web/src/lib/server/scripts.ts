@@ -140,7 +140,7 @@ export async function scriptDetail(sb: ServiceClient, workspaceId: string, row: 
 /** Fails early with a clear message instead of a failed background job. */
 export async function assertCanWrite(sb: ServiceClient, caller: Caller) {
   const providers = await providerStatus(sb, caller.workspaceId);
-  if (!providers.anthropic) throw new AppError('provider_not_configured', 'Add a Claude API key in Settings → Providers to write scripts.', 400, { provider: 'anthropic' });
+  if (!providers.anthropic && !providers.gemini) throw new AppError('provider_not_configured', 'Add a Claude key, or a free Gemini key, in Settings → Providers to write scripts.', 400, { provider: 'anthropic' });
   const t = LLM_TASKS.writeScript;
   await assertBudget(sb, caller.workspaceId, llmEstimate(modelForTier(t.tier), t.input, t.output));
 }

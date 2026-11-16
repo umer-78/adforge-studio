@@ -57,6 +57,12 @@ const envSchema = z.object({
   LLM_MODEL: z.string().default('claude-opus-5-5'),
   LLM_FAST_MODEL: z.string().default('claude-sonnet-5-5'),
   ANTHROPIC_SERVER_FALLBACKS: flag(true),
+  /** Google Gemini, the free-tier fallback for text tasks when no Claude key is set. Aliases follow Google's current Flash models. */
+  GEMINI_API_KEY: optional,
+  GEMINI_MODEL: z.string().default('gemini-flash-latest'),
+  GEMINI_FAST_MODEL: z.string().default('gemini-flash-lite-latest'),
+  /** Most a workspace may spend on paid AI in one UTC day; 0 turns the cap off. While OPEN_ACCESS is on it defaults to $2. */
+  AI_DAILY_CAP_USD: optional,
   AGNES_API_KEY: optional,
   /** International API; use https://api.agnes-ai.cn/v1 for the China site. */
   AGNES_BASE_URL: z.string().url().default('https://apihub.agnes-ai.com/v1'),
@@ -165,6 +171,15 @@ export function ownerEmails(e: Pick<Env, 'APP_OWNER_EMAILS'> = env()): string[] 
     .filter(Boolean);
 }
 
+/** The daily paid-AI cap in dollars, or null for none: AI_DAILY_CAP_USD, else $2 while sign-in is off. */
+export function dailyAiCapUsd(e: Pick<Env, 'AI_DAILY_CAP_USD' | 'OPEN_ACCESS'> = env()): number | null {
+  if (e.AI_DAILY_CAP_USD != null) {
+    const n = Number(e.AI_DAILY_CAP_USD);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }
+  return e.OPEN_ACCESS ? 2 : null;
+}
+
 /** The account every visitor uses while sign-in is off (OPEN_ACCESS), else null. */
 export function openAccessEmail(e: Pick<Env, 'OPEN_ACCESS' | 'APP_OWNER_EMAILS'> = env()): string | null {
   return e.OPEN_ACCESS ? (ownerEmails(e)[0] ?? null) : null;
@@ -210,7 +225,7 @@ export function features(e = env()): Features {
     maxUploadBytes: s3 ? 5 * 1024 ** 3 : e.SUPABASE_MAX_FILE_MB * 1024 ** 2,
     mux: !!(e.MUX_TOKEN_ID && e.MUX_TOKEN_SECRET),
     muxSigned: !!(e.MUX_SIGNING_KEY_ID && e.MUX_SIGNING_KEY_PRIVATE),
-    llm: !!e.ANTHROPIC_API_KEY,
+    llm: !!(e.ANTHROPIC_API_KEY || e.GEMINI_API_KEY),
     embeddings: !!e.OPENAI_API_KEY,
     moderation: !!e.OPENAI_API_KEY,
     fal: !!e.FAL_KEY,

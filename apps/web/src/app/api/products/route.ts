@@ -3,7 +3,7 @@ import { assertBudget, assertSafeUrl, enqueueJob } from '@adforge/core/server';
 import * as z from 'zod';
 import { check, logActivity, orIlike, route } from '@/lib/server/api';
 import { llmTaskUsd, toProductViews } from '@/lib/server/growth';
-import { providerStatus } from '@/lib/server/workspace';
+import { hasLlm } from '@/lib/server/workspace';
 
 const query = z.object({
   q: z.string().max(200).optional(),
@@ -26,7 +26,7 @@ export const GET = route({ query }, async ({ sb, caller, query: q }) => {
 export const POST = route({ body: productImportSchema, limit: ['products', 60, 3600] }, async ({ sb, caller, body }) => {
   const url = assertSafeUrl(body.url).toString();
   // Claude is optional here: without it the import keeps only what the page states.
-  if ((await providerStatus(sb, caller.workspaceId)).anthropic) await assertBudget(sb, caller.workspaceId, llmTaskUsd('extractProduct'));
+  if (await hasLlm(sb, caller.workspaceId)) await assertBudget(sb, caller.workspaceId, llmTaskUsd('extractProduct'));
   const row = check(await sb.from('products').insert({ workspace_id: caller.workspaceId, source_url: url, status: 'importing', created_by: caller.userId }).select('*').single(), 'Could not start the import');
   const job = await enqueueJob(sb, { type: 'product.import', payload: { productId: row.id }, workspaceId: caller.workspaceId, createdBy: caller.userId, priority: 5, idempotencyKey: `product.import:${row.id}` });
   check(await sb.from('products').update({ job_id: job.id }).eq('id', row.id), 'Could not start the import');

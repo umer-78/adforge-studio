@@ -1,5 +1,5 @@
 import { asJson, enhancedPromptSchema, enhancePromptRequestSchema, SYSTEM_PROMPTS, brandContext } from '@adforge/core';
-import { modelForTier } from '@adforge/core/server';
+import { llmAccess, llmModel } from '@adforge/core/server';
 import { check, owned, route } from '@/lib/server/api';
 import { productFactsText } from '@/lib/server/products';
 import { runLlm, workspaceBrandContext } from '@/lib/server/llm';
@@ -21,6 +21,7 @@ export const POST = route({ body: enhancePromptRequestSchema, scope: 'generate',
     .join('\n');
   const data = await runLlm(sb, caller, { task: 'enhancePrompt', schema: enhancedPromptSchema, system: body.mode === 'ad' ? SYSTEM_PROMPTS.enhanceAd : SYSTEM_PROMPTS.enhanceCinematic, prompt });
   let id: string | null = null;
+  const llmProvider = (await llmAccess(caller.workspaceId))?.provider ?? 'anthropic';
   if (body.parentId) await owned(sb, 'prompts', body.parentId, caller, 'The original prompt');
   if (body.save) {
     const row = check(
@@ -37,8 +38,8 @@ export const POST = route({ body: enhancePromptRequestSchema, scope: 'generate',
           prompt: data.prompt,
           negative_prompt: data.negativePrompt,
           parent_id: body.parentId ?? null,
-          provider: 'anthropic',
-          model: modelForTier('fast'),
+          provider: llmProvider,
+          model: llmModel(llmProvider, 'fast'),
         })
         .select('id')
         .single(),

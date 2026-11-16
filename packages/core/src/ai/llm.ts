@@ -5,10 +5,13 @@ export const LLM_PRICING: Record<string, { inputPerM: number; outputPerM: number
   'claude-sonnet-5-5': { inputPerM: 2, outputPerM: 10, cacheReadPerM: 0.2 },
   'claude-haiku-5-5': { inputPerM: 0.1, outputPerM: 0.5 },
   'text-embedding-3-small': { inputPerM: 0.02, outputPerM: 0 },
+  // Gemini's paid list prices (its free tier costs nothing); the lite alias must come before the flash one
+  'gemini-flash-lite': { inputPerM: 0.25, outputPerM: 1.5 },
+  'gemini-flash': { inputPerM: 0.75, outputPerM: 3.75 },
 };
 
 export function llmCost(model: string, usage: { input_tokens?: number | null; output_tokens?: number | null; cache_read_input_tokens?: number | null }): number {
-  const key = Object.keys(LLM_PRICING).find((k) => model.startsWith(k));
+  const key = model.startsWith('gemini') ? (/lite/.test(model) ? 'gemini-flash-lite' : 'gemini-flash') : Object.keys(LLM_PRICING).find((k) => model.startsWith(k));
   const p = key ? LLM_PRICING[key]! : LLM_PRICING['claude-opus-5-5']!;
   const input = (usage.input_tokens ?? 0) * p.inputPerM;
   const cached = (usage.cache_read_input_tokens ?? 0) * (p.cacheReadPerM ?? p.inputPerM);

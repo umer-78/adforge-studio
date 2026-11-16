@@ -5,6 +5,12 @@ import type { JobView, Me } from '@/lib/types';
 import type { Caller } from './api';
 
 /** Which AI/publishing providers have a key, from the workspace's own keys or the server env. */
+/** True when the workspace can run text tasks: a Claude key, or Gemini as the free fallback. */
+export async function hasLlm(sb: ServiceClient, workspaceId: string): Promise<boolean> {
+  const p = await providerStatus(sb, workspaceId);
+  return p.anthropic || p.gemini;
+}
+
 export async function providerStatus(sb: ServiceClient, workspaceId: string): Promise<Record<KeyProvider, boolean>> {
   const { data } = await sb.from('provider_credentials').select('provider').eq('workspace_id', workspaceId);
   const own = new Set((data ?? []).map((r) => r.provider));
@@ -36,7 +42,7 @@ export async function loadMe(sb: ServiceClient, caller: Caller): Promise<Me> {
       storage: f.storage,
       maxUploadBytes: f.maxUploadBytes,
       mux: f.mux,
-      llm: providers.anthropic,
+      llm: providers.anthropic || providers.gemini,
       embeddings: providers.openai,
       fal: providers.fal,
       replicate: providers.replicate,

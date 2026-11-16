@@ -19,6 +19,8 @@ export * from './meta-signed-request';
 export * from './ai/keys';
 export * from './ai/verify';
 export * from './ai/anthropic';
+export * from './ai/gemini';
+export * from './ai/llm-provider';
 export * from './ai/openai';
 export * from './ai/fal';
 export * from './ai/replicate';

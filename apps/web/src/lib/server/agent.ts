@@ -264,7 +264,7 @@ async function launchAccounts(sb: ServiceClient, workspaceId: string, cfg: Agent
 export async function assertStepReady(sb: ServiceClient, caller: Caller, steps: AgentSteps, step: AgentStep, edits: Record<string, unknown>, output: Record<string, unknown>, usd: number) {
   const providers = await providerStatus(sb, caller.workspaceId);
   if (step === 'research' || step === 'script' || step === 'optimize') {
-    if (!providers.anthropic) throw new AppError('provider_not_configured', 'Add a Claude API key in Settings → Providers to use agent mode.', 400, { provider: 'anthropic' });
+    if (!providers.anthropic && !providers.gemini) throw new AppError('provider_not_configured', 'Add a Claude key, or a free Gemini key, in Settings → Providers to use agent mode.', 400, { provider: 'anthropic' });
   }
   if (step === 'script' && !isRecord(steps.research.output.brief)) throw badRequest('Run the research step first.');
   if (step === 'generate') {

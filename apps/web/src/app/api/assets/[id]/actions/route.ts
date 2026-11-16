@@ -35,11 +35,11 @@ export const POST = route({ body: actionSchema, limit: ['asset-actions', 240, 36
       job = await enqueueJob(sb, { ...base, type: 'media.check', payload: { assetId: asset.id }, idempotencyKey: `media.check:${asset.id}:${bucket}` });
       break;
     case 'analyze':
-      if (!(await providerKey(ws, 'anthropic')) && !(await providerKey(ws, 'openai'))) throw badRequest('Add a Claude or OpenAI key in Settings → Providers to analyze files.');
+      if (!(await providerKey(ws, 'anthropic')) && !(await providerKey(ws, 'gemini')) && !(await providerKey(ws, 'openai'))) throw badRequest('Add a Claude, Gemini or OpenAI key in Settings → Providers to analyze files.');
       job = await enqueueJob(sb, { ...base, type: 'media.analyze', payload: { assetId: asset.id, steps: body.steps }, idempotencyKey: `media.analyze:${asset.id}:${bucket}` });
       break;
     case 'score':
-      if (!(await providerKey(ws, 'anthropic'))) throw badRequest('Add a Claude key in Settings → Providers to score ads.');
+      if (!(await providerKey(ws, 'anthropic')) && !(await providerKey(ws, 'gemini'))) throw badRequest('Add a Claude key, or a free Gemini key, in Settings → Providers to score ads.');
       job = await enqueueJob(sb, { ...base, type: 'media.score', payload: { assetId: asset.id, platform: body.platform }, idempotencyKey: `media.score:${asset.id}:${body.platform ?? 'any'}:${bucket}` });
       break;
     case 'reframe':

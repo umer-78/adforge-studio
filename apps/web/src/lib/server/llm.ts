@@ -1,24 +1,24 @@
 import 'server-only';
 import { LLM_TASKS, llmEstimate, type LlmTask } from '@adforge/core';
-import { assertBudget, modelForTier, recordUsage, requireProviderKey, structured, type ImageInput, type ServiceClient } from '@adforge/core/server';
+import { assertBudget, llmModel, recordUsage, requireLlm, structuredVia, type ImageInput, type ServiceClient } from '@adforge/core/server';
 import type * as z from 'zod';
 import type { Caller } from './api';
 
-/** Runs a structured Claude call for a request: budget check first, usage recorded after. */
+/** Runs a structured call on Claude, or on Gemini when only that key is set: budget check first, usage recorded after. */
 export async function runLlm<T extends z.ZodType>(
   sb: ServiceClient,
   caller: Caller,
   opts: { task: LlmTask; schema: T; system: string; prompt: string; images?: { label?: string; image: ImageInput }[]; meta?: Record<string, unknown> },
 ): Promise<z.infer<T>> {
-  const key = await requireProviderKey(caller.workspaceId, 'anthropic');
+  const access = await requireLlm(caller.workspaceId);
   const t = LLM_TASKS[opts.task];
-  await assertBudget(sb, caller.workspaceId, llmEstimate(modelForTier(t.tier), t.input, t.output));
-  const res = await structured({ apiKey: key, schema: opts.schema, system: opts.system, prompt: opts.prompt, images: opts.images, tier: t.tier });
+  await assertBudget(sb, caller.workspaceId, llmEstimate(llmModel(access.provider, t.tier), t.input, t.output));
+  const res = await structuredVia(access, { schema: opts.schema, system: opts.system, prompt: opts.prompt, images: opts.images, tier: t.tier });
   await recordUsage(sb, {
     workspaceId: caller.workspaceId,
     userId: caller.userId,
     kind: 'llm',
-    provider: 'anthropic',
+    provider: access.provider,
     model: res.model,
     units: res.usage.input_tokens + res.usage.output_tokens,
     unit: 'token',

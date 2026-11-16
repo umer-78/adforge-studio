@@ -7,6 +7,7 @@ export { KEY_PROVIDERS, type KeyProvider };
 
 const ENV_KEYS: Record<KeyProvider, () => string | undefined> = {
   anthropic: () => env().ANTHROPIC_API_KEY,
+  gemini: () => env().GEMINI_API_KEY,
   openai: () => env().OPENAI_API_KEY,
   fal: () => env().FAL_KEY,
   replicate: () => env().REPLICATE_API_TOKEN,
