@@ -8,3 +8,8 @@ onlyBuiltDependencies:
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
+
+overrides:
+  # typescript-estree 8.72 (through eslint-config-next) pins minimatch 10, which has a
+  # ReDoS advisory fixed only in 11; typescript-estree 8.73 moved to 11 with the same call.
+  'minimatch@>=10 <11': ^11.0.1
