@@ -1,5 +1,7 @@
 # AdForge Studio
 
+[![AdForge Studio: the live site](.github/preview.jpg)](https://adforge-studio-sage.vercel.app/)
+
 A website for making, editing and publishing ad videos and photos in one place: upload or generate
 footage, cut it in a timeline editor, add voice, music and motion graphics, preview it on 3D
 devices, then schedule it to social platforms or launch it as a paused ad.
