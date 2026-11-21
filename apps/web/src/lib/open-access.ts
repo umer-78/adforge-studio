@@ -32,3 +32,16 @@ export function isOpenAccessGuest(email: unknown): boolean {
 
 /** The name the guest account goes by, in the app and in activity entries. */
 export const GUEST_NAME = 'Guest';
+
+/**
+ * A request the browser or the Next.js router sends ahead of a click (link prefetch). It must not
+ * sign anyone in: /auth/open makes a one-time token for the shared guest, and several prefetches at
+ * once used to spoil each other's tokens ("Email link is invalid or has expired").
+ */
+export function isPrefetchRequest(headers: Headers): boolean {
+  return (
+    headers.get('next-router-prefetch') === '1' ||
+    (headers.get('purpose') ?? '').toLowerCase() === 'prefetch' ||
+    (headers.get('sec-purpose') ?? '').toLowerCase().includes('prefetch')
+  );
+}

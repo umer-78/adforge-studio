@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import { isOpenAccessGuest, openAccessEnabled, ownerEmailList } from '@/lib/open-access';
+import { isOpenAccessGuest, isPrefetchRequest, openAccessEnabled, ownerEmailList } from '@/lib/open-access';
 import { APP_PREFIXES } from '@/lib/site';
 
 const isAppPath = (p: string) => APP_PREFIXES.some((prefix) => p === prefix || p.startsWith(`${prefix}/`));
@@ -56,12 +56,14 @@ export async function proxy(request: NextRequest) {
   if (isAppPath(path)) {
     const next = path + request.nextUrl.search;
     const ok = await permitted();
+    // a prefetch of a page that needs a session gets nothing: the click itself signs the visitor in
+    if (!ok && isPrefetchRequest(request.headers)) return new NextResponse(null, { status: 204 });
     if (!ok && openAccess()) return redirect('/auth/open', { next });
     if (!claims) return redirect('/login', { next });
     if (!ok) return redirect('/login', { error: 'not_allowed' });
   }
   // With sign-in off the sign-in page goes straight into the studio, unless it is showing an error.
-  if (path === '/login' && !claims && openAccess() && !ownerSignIn && !request.nextUrl.searchParams.has('error')) {
+  if (path === '/login' && !claims && openAccess() && !ownerSignIn && !request.nextUrl.searchParams.has('error') && !isPrefetchRequest(request.headers)) {
     return redirect('/auth/open', { next: request.nextUrl.searchParams.get('next') ?? '/dashboard' });
   }
   if (path === '/login' && claims && !(guest && ownerSignIn) && !request.nextUrl.searchParams.has('error') && (await permitted())) {

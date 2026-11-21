@@ -1,7 +1,7 @@
 import type { EmailOtpType } from '@supabase/supabase-js';
 import type { NextRequest } from 'next/server';
 import { openAccessEmail, serviceClient, type ServiceClient } from '@adforge/core/server';
-import { GUEST_NAME, openAccessGuestEmail, ownerEmailList } from '@/lib/open-access';
+import { GUEST_NAME, isPrefetchRequest, openAccessGuestEmail, ownerEmailList } from '@/lib/open-access';
 import { clientIp, rateLimit } from '@/lib/server/api';
 import { redirectTo, safeNext } from '@/lib/server/auth';
 import { sessionClient } from '@/lib/server/supabase';
@@ -39,6 +39,8 @@ async function joinAsGuest(sb: ServiceClient, workspaceId: string, guestId: stri
  * for the guest and redeems it at once, so this browser gets a normal session.
  */
 export async function GET(req: NextRequest) {
+  // a link prefetch must not make or spend a sign-in token
+  if (isPrefetchRequest(req.headers)) return new Response(null, { status: 204 });
   const next = safeNext(req.nextUrl.searchParams.get('next'));
   const ownerEmail = openAccessEmail();
   if (!ownerEmail) return redirectTo(req, '/login', { next });
@@ -61,16 +63,26 @@ export async function GET(req: NextRequest) {
     const workspaceId = await ownerWorkspace(sb, ownerEmail.toLowerCase());
     if (!workspaceId) return redirectTo(req, '/login', { error: NOT_READY, owner: '1' });
 
-    const { data, error } = await sb.auth.admin.generateLink({ type: 'magiclink', email: guestEmail });
-    const tokenHash = data?.properties?.hashed_token;
-    const guestId = data?.user?.id;
-    if (error || !tokenHash || !guestId) throw new Error(`Could not make a sign-in token: ${error?.message ?? 'no token'}`);
-    await joinAsGuest(sb, workspaceId, guestId);
-
-    // A brand-new guest account comes back as a sign-up token; an existing one as a magic link.
-    const type: EmailOtpType = data.properties.verification_type === 'signup' ? 'signup' : 'magiclink';
-    const { error: verifyError } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
-    if (verifyError) throw new Error(`Could not redeem the sign-in token: ${verifyError.message}`);
+    // Every visitor shares the guest account, and a new token for it spoils one made a moment
+    // earlier: two visitors opening the studio at once would fail with "Email link is invalid or
+    // has expired". So a spoiled token is replaced with a fresh one, up to three tries.
+    let joined = false;
+    for (let attempt = 1; ; attempt++) {
+      const { data, error } = await sb.auth.admin.generateLink({ type: 'magiclink', email: guestEmail });
+      const tokenHash = data?.properties?.hashed_token;
+      const guestId = data?.user?.id;
+      if (error || !tokenHash || !guestId) throw new Error(`Could not make a sign-in token: ${error?.message ?? 'no token'}`);
+      if (!joined) {
+        await joinAsGuest(sb, workspaceId, guestId);
+        joined = true;
+      }
+      // A brand-new guest account comes back as a sign-up token; an existing one as a magic link.
+      const type: EmailOtpType = data.properties.verification_type === 'signup' ? 'signup' : 'magiclink';
+      const { error: verifyError } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
+      if (!verifyError) break;
+      if (attempt >= 3 || !/invalid|expired/i.test(verifyError.message)) throw new Error(`Could not redeem the sign-in token: ${verifyError.message}`);
+      await new Promise((resolve) => setTimeout(resolve, 120 + Math.floor(Math.random() * 380)));
+    }
   } catch (err) {
     console.error('[auth/open]', err instanceof Error ? err.message : err);
     return redirectTo(req, '/login', { error: FAILED });

@@ -25,3 +25,14 @@ describe('open access', () => {
     expect(isOpenAccessGuest('visitor@studio.invalid')).toBe(true);
   });
 });
+
+describe('isPrefetchRequest', () => {
+  it('spots router and browser prefetches, and nothing else', async () => {
+    const { isPrefetchRequest } = await import('./open-access');
+    expect(isPrefetchRequest(new Headers({ 'next-router-prefetch': '1' }))).toBe(true);
+    expect(isPrefetchRequest(new Headers({ purpose: 'prefetch' }))).toBe(true);
+    expect(isPrefetchRequest(new Headers({ 'sec-purpose': 'prefetch;prerender' }))).toBe(true);
+    expect(isPrefetchRequest(new Headers({ rsc: '1' }))).toBe(false);
+    expect(isPrefetchRequest(new Headers())).toBe(false);
+  });
+});
